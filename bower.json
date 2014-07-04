@@ -1,0 +1,21 @@
+{
+  "name": "monads",
+  "version": "0.1.0",
+  "authors": [
+    "Dan Munckton <daniel.munckton@neo.com>"
+  ],
+  "description": "A presentation on Monads",
+  "main": "index.html",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "remark": "~0.6.5"
+  }
+}

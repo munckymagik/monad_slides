@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Slides</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <style type="text/css">
+      /* Slideshow styles */
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+# The Monad Pattern
+
+---
+
+# Disclaimer
+
+Early days for me, this is my current understanding, happy to be corrected.
+
+---
+
+# I understand a Monad to be
+
+A functional design pattern where you wrap a value or operation that you want to treat specially.
+
+---
+
+# Sometimes ...
+
+```ruby
+thing = get_thing()
+# => #<Thing:0x007f84731bc2f0>
+```
+
+---
+
+# ... and then ...
+
+```ruby
+thing = get_thing()
+# => #<Thing:0x007f84731bc2f0>
+thing.do_thing()
+# => "Whooaa! I did my thing!"
+```
+
+---
+
+# But what if ...?
+
+```ruby
+thing = get_thing()
+# => nil
+thing.do_thing()
+# NoMethodError: undefined method `do_thing' for nil:NilClass
+```
+
+---
+
+# So you end up with ...
+
+```ruby
+thing = get_thing()
+# => nil
+unless thing.nil?
+  thing.do_thing()
+else
+  puts "Didn't get a thing :("
+end
+# Didn't get a thing :(
+```
+
+With several operations this leads to several nested checks for nil.
+
+---
+
+# Well, you know how ...
+
+```ruby
+[1, 2, 3].map do |x|
+  x + 1
+end
+# => [2, 3, 4]
+```
+
+---
+
+# Yet ...
+
+```ruby
+[].map do |x|
+  x + 1
+end
+# => []
+```
+
+---
+
+# And still further ...
+
+```ruby
+a = [].map do |x|
+  x + 1
+end
+# => []
+
+a.each do |x|
+  puts x
+end
+# (no output)
+```
+
+---
+
+# Well what if ...
+
+You could treat a single value as a collection?
+
+```ruby
+thing = get_thing()
+# => [#<Thing:0x007f84731bc2f0>]
+```
+
+---
+
+# Then ...?
+
+```ruby
+thing = get_thing()
+# => [#<Thing:0x007f84731bc2f0>]
+
+thing_done = thing.map do |thing|
+  thing.do_thing()
+end
+# => ["I did my thing!"]
+```
+
+---
+
+# And
+
+```ruby
+thing = get_thing()
+# => []
+
+thing_done = thing.map do |thing|
+  thing.do_thing()
+end
+# => []
+```
+
+---
+
+# That would be a Monad
+
+---
+
+# Benefits
+
+* Entirely declarative
+* No distracting (usually nested) nil checking logic
+* Promotes the positive case
+
+# Costs
+
+* You need to get familiar with ```map``` and friends
+* You need a language which supports functions as first-class citizens
+* Logic still needed at the end to check for empty collection
+
+---
+
+# There's a specific monad pattern for this: Option
+
+Here's what the positive case looks like in Scala:
+
+```scala
+val thing: Option[String] = Some("Hello!")
+// => thing: Option[String] = Some(Hello!)
+val upperThing = thing.map { _.trim }
+  .filter { _.length != 0 }
+  .map { _.toUpperCase }
+// => upperThing: Option[String] = Some(HELLO!)
+println(upperThing.getOrElse("Oh no!")
+// HELLO!
+```
+
+---
+
+# Built-in support is even better: Swift
+
+```swift
+var thing: String? = "   SDFSDF   "
+// => {Some "   SDFSDF   "}
+
+thing = thing?.stringByTrimmingCharactersInSet(
+  NSCharacterSet.whitespaceAndNewlineCharacterSet())
+// => {Some "SDFSDF"}
+
+thing = thing?.lowercaseString
+// => {Some "sdfsdf"}
+
+if let outThing = thing? {
+  println(outThing)
+  // sdfsdf
+} else {
+  println("No thing")
+}
+```
+
+Note: the `bind` or `map` equivalent in Swift appears to be hidden, so only
+method chaining is possible using the `?` operator.
+
+---
+
+# What other patterns are there?
+
+* Try - to deal with exceptions that aren't exceptional
+* Either - for two equivalent cases that must be handled differently
+* State - the state pattern as a monad
+* Future/Promise - code against future values that don't exist yet in async code
+
+---
+
+# A Stricter Definition: Monad Rules / Laws / Axioms
+
+* `bind` is `flatMap`
+* `unit` is the single-argument constructor
+* Strictly, having a `map` makes it a functor, or something blah blah
+* The rules guarantee compatible behaviour, composability etc
+* Lot's of articles and papers
+
+---
+
+# Law 1: Identity (Right Unit)
+
+```ruby
+m.flatMap(unit) == m
+```
+
+Says that if you bind (flatMap) a monadic value to unit, you get back the
+(equivalent of) the original value unchanged
+
+---
+
+# Law 2: Unit (Left Unit)
+
+```ruby
+unit(x).flatMap(f) == f(x)
+```
+
+If you wrap a value inside a unit, then bind (flatMap) to f, this is the same
+as applying f to x
+
+---
+
+# Law 3: Composition (Associativity)
+
+```ruby
+m.flatMap(g).flatMap(f) == m.flatMap(->(x) { g(x).flatMap(f) })
+```
+
+Nesting calls to flatMap should be equivalent to calling them sequentially [9].
+Used to enforce that monads compose nicely. Says that composing a new function
+that applies f to g and then binding to m should be the same as applying m to
+f then to g
+
+---
+
+# Further Reading
+
+Philip Wadler’s (Haskell IO guy) “The essence of functional programming”
+
+* Original paper introducing Monads
+* Go to http://homepages.inf.ed.ac.uk/wadler/topics/monads.html
+* Then search for “The essence of functional programming”
+
+---
+
+# How can I use them now?
+
+* Ruby
+  * There are some Gems (which?)
+  * or just use an Array
+  * See 'try' in ActiveSupport
+* Scala - built-in or use scalaz
+* Java - Google Guice (hint: use Scala or Clojure)
+* Python - has map, functools, itertools etc for iterable types
+* Clojure - need to check
+* Erlang / Elixir - need to check
+* Swift - built-in Option as we've seen
+
+---
+
+# The End
+
+Thank you!
+
+* What was good?
+* Not so good?
+* Puzzles?
+* Suggestions?
+
+    </textarea>
+    <script src="bower_components/remark/out/remark.min.js" type="text/javascript">
+    </script>
+    <script type="text/javascript">
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
